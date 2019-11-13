@@ -7,6 +7,9 @@ import { globalAppRegistryEmit } from 'mongodb-redux-common/app-registry';
 
 import EXPLAIN_STATES from 'constants/explain-states';
 
+//IgalR
+const util = require('util')
+
 /**
  * The module action prefix.
  */
@@ -28,8 +31,18 @@ export const SWITCHED_TO_JSON_VIEW = `${PREFIX}/SWITCHED_TO_JSON_VIEW`;
 export const EXPLAIN_STATE_CHANGED = `${PREFIX}/EXPLAIN_STATE_CHANGED`;
 
 /**
-* The explain plan fetched action name.
-*/
+ *  open offline explain modal
+ */
+export const OPEN_OFFLINE_EXPLAIN = `${PREFIX}/OPEN_OFFLINE_EXPLAIN`;
+
+/**
+ * close offline explain modal
+ */
+export const CLOSE_OFFLINE_EXPLAIN = `${PREFIX}/CLOSE_OFFLINE_EXPLAIN`;
+
+/**
+ * The explain plan fetched action name.
+ */
 export const EXPLAIN_PLAN_FETCHED = `${PREFIX}/EXPLAIN_PLAN_FETCHED`;
 
 /**
@@ -38,6 +51,8 @@ export const EXPLAIN_PLAN_FETCHED = `${PREFIX}/EXPLAIN_PLAN_FETCHED`;
 export const INITIAL_STATE = {
   explainState: EXPLAIN_STATES.INITIAL,
   viewType: 'tree',
+  isImportPipelineOpen: false,
+  importPipelineOfflineText: '', 
   error: null,
   executionSuccess: false,
   executionTimeMillis: 0,
@@ -70,6 +85,22 @@ const switchViewType = (state, action) => ({
   ...state,
   viewType: action.viewType
 });
+
+const toggleOfflineExplainDialog = (state, action) => {
+  console.log('Reducer: In toggleOfflineExplainDialog');
+  //IgalR
+  console.log("Reducer: State before: " + util.inspect(state));
+  
+  const finalState = ({
+    ...state,
+    isImportPipelineOpen: action.isImportPipelineOpen
+  });
+  
+  //IgalR
+  console.log("Reducer: State after: " + util.inspect(finalState));
+  
+  return finalState;
+};
 
 /**
  * Changes explainState.
@@ -108,7 +139,9 @@ const MAPPINGS = {
   [SWITCHED_TO_TREE_VIEW]: switchViewType,
   [SWITCHED_TO_JSON_VIEW]: switchViewType,
   [EXPLAIN_STATE_CHANGED]: doChangeExplainPlanState,
-  [EXPLAIN_PLAN_FETCHED]: executeExplainPlan
+  [EXPLAIN_PLAN_FETCHED]:  executeExplainPlan,
+  [OPEN_OFFLINE_EXPLAIN]:  toggleOfflineExplainDialog,
+  [CLOSE_OFFLINE_EXPLAIN]: toggleOfflineExplainDialog
 };
 
 /**
@@ -134,6 +167,33 @@ export const switchToTreeView = () => ({
   type: SWITCHED_TO_TREE_VIEW,
   viewType: 'tree'
 });
+
+export const loadOffline = () => ({
+  type: OPEN_OFFLINE_EXPLAIN,
+  isImportPipelineOpen : true
+});
+
+export const closeOffline = () => ({
+  type: CLOSE_OFFLINE_EXPLAIN,
+  isImportPipelineOpen : false
+});
+
+export const openOfflineExplain = () => {
+  console.log('in openOfflineExplain')
+  return (dispatch, getState) => {
+      console.log("Dispatching Action: OPEN_OFFLINE_EXPLAIN " + loadOffline);
+      dispatch(loadOffline());
+      return;
+  }
+};
+
+export const closeOfflineExplain = () => {
+    return (dispatch, getState) => {
+      console.log("Dispatching Action: CLOSE_OFFLINE_EXPLAIN " + closeOffline);
+      dispatch(closeOffline());
+      return;
+  }
+};
 
 /**
  * Action creator for switch to JSON view events.
@@ -266,6 +326,7 @@ export const fetchExplainPlan = (query) => {
         dispatch(explainPlanFetched(explain));
         dispatch(treeStagesChanged(explain));
 
+
         // Send metrics
         dispatch(globalAppRegistryEmit(
           'explain-plan-fetched',
@@ -285,10 +346,11 @@ export const fetchExplainPlan = (query) => {
             totalKeysExamined: explain.totalKeysExamined,
             indexUsed: explain.usedIndex
           }
-        ));
+        )
+      );
 
         return;
-      });
+     });
     }
   };
 };

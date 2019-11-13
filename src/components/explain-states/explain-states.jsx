@@ -5,11 +5,14 @@ import { ZeroState, StatusRow, ViewSwitcher } from 'hadron-react-components';
 import { TextButton } from 'hadron-react-buttons';
 import { ZeroGraphic } from 'components/zero-graphic';
 import { ExplainBody } from 'components/explain-body';
-
+import ImportPipeline from '../load-offline/modals/import-pipeline';
 import INDEX_TYPES from 'constants/index-types';
 import EXPLAIN_STATES from 'constants/explain-states';
 
 import styles from './explain-states.less';
+
+//IgalR
+const util = require('util')
 
 /**
  * Readonly warning for the status row.
@@ -58,16 +61,21 @@ class ExplainStates extends Component {
       viewType: PropTypes.string.isRequired,
       rawExplainObject: PropTypes.object.isRequired,
       explainState: PropTypes.string.isRequired,
-      error: PropTypes.object
+      error: PropTypes.object,
+        
+      isImportPipelineOpen: PropTypes.bool.isRequired,
+      importPipelineOfflineText: PropTypes.string.isRequired
     }),
     fetchExplainPlan: PropTypes.func.isRequired,
     changeExplainPlanState: PropTypes.func.isRequired,
-    switchToTreeView: PropTypes.func.isRequired,
+    openOfflineExplain: PropTypes.func.isRequired,
+    closeOfflineExplain: PropTypes.func.isRequired,
     switchToJSONView: PropTypes.func.isRequired,
     query: PropTypes.any,
     treeStages: PropTypes.object.isRequired,
     appRegistry: PropTypes.object.isRequired,
-    queryExecuted: PropTypes.func.isRequired
+    queryExecuted: PropTypes.func.isRequired,
+    importPipelineError: PropTypes.string,
   }
 
   constructor(props) {
@@ -123,6 +131,36 @@ class ExplainStates extends Component {
     this.props.openLink(DOCUMENTATION_LINK);
   }
 
+  /*
+   * Opens offline explain modal
+   */
+  openOfflineExplainInput() {
+    console.log('In openOfflineExplainInput');
+    console.log(this.props.openOfflineExplain);
+    this.props.openOfflineExplain();
+  }
+  
+  /*
+   * Close offline explain modal
+   */
+  closeOfflineExplainInput() {
+     this.props.closeOfflineExplain();
+  }
+
+  /*
+   * Close new offline explain
+   */
+  createNewOfflineExplain() {
+      
+  }
+
+  /*
+   * Text in import explain offline changed
+   */
+  offlineExplainTextChanged() {
+      console.log("====> TEXT CHANGED: ");
+  }
+  
   /**
    * Render banner with information.
    *
@@ -150,9 +188,9 @@ class ExplainStates extends Component {
   renderZeroState() {
     if (this.checkIfZeroState()) {
       return (
-        <div key="zero-state" className={classnames(styles['zero-state-container'])}>
+        <div key="zero-state" className={classnames(styles['zero-state-container'])} onDrop={this.onExecuteExplainClicked.bind(this)}>
           <ZeroGraphic />
-          <ZeroState header={HEADER} subtext={SUBTEXT}>
+          <ZeroState header={HEADER} subtext={SUBTEXT} >
             <div className={classnames(styles['zero-state-action'])}>
               <div>
                 <TextButton
@@ -216,6 +254,15 @@ class ExplainStates extends Component {
       : 'Raw JSON';
 
     return (
+      <div>
+      <div className="action-bar">
+      <TextButton
+        className="btn btn-primary btn-xs open-insert"
+        dataTestId="open-insert-document-modal-button"
+        text="Import Offline Plan"
+        tooltipId="document-is-not-writable"
+        clickHandler={this.openOfflineExplainInput.bind(this)} />
+      </div>
       <div className={classnames(styles['action-bar'])}>
         <ViewSwitcher
           label="View Details As"
@@ -224,6 +271,7 @@ class ExplainStates extends Component {
           disabled={this.checkIfZeroState()}
           onClick={this.onViewSwitch.bind(this)}
         />
+        </div>
       </div>
     );
   }
@@ -234,9 +282,24 @@ class ExplainStates extends Component {
    * @returns {React.Component} The rendered component.
    */
   render() {
+      
+    //IgalR
+    console.log("Explain-States: Render - " + util.inspect(this.props));
+    
+    const importPipelineModal = (
+      <ImportPipeline
+        isOpen={this.props.explain.isImportPipelineOpen}
+        closeImport={this.closeOfflineExplainInput.bind(this)}
+        changeText={this.offlineExplainTextChanged.bind(this)}
+        createNew={this.createNewOfflineExplain.bind(this)}
+        error={this.props.importPipelineError}
+        text={this.props.explain.importPipelineOfflineText}
+      />
+    );
     return (
       [
         <div key="controls-container" className={classnames(styles['controls-container'])}>
+          {importPipelineModal}
           {this.renderBanner()}
           {this.renderQueryBar()}
           {this.renderViewSwitcher()}
